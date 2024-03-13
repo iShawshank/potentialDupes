@@ -3,7 +3,7 @@ import Levenshtein from 'js-levenshtein';
 import _ from 'lodash';
 
 // Threshold Modifier for determining accuracy
-const THRESHOLD_MOD = 0.2;
+const THRESHOLD_MOD = 0.25;
 
 export const findPotentialDupes = (advertisersFile) => {
   const potentialDupes = {};
@@ -23,7 +23,7 @@ export const findPotentialDupes = (advertisersFile) => {
   // map each advertiser by initial alphanumeric character
   for (const name of advertisers) {
     // get first alphanumeric character for the key of the group
-    let key = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()[0];
+    const key = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()[0];
     if (_.isEmpty(key)) {
       continue;
     }
@@ -34,42 +34,54 @@ export const findPotentialDupes = (advertisersFile) => {
     groups[key].push(name);
   }
 
-  // Iterate through each group and compare only names within the same group
   for (const group of Object.values(groups)) {
-    // Iterate through the each advertiser in group
     for (let i = 0; i < group.length; i++) {
       const current = group[i];
-      const normalizedCurrent = current
-        .replace(/[^a-zA-Z0-9]/g, '')
-        .toLowerCase();
-      // Iterate through the rest of the group to find potential dupes
+      const currentInitialWord = current
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .toLowerCase()
+        .split(' ')[0];
+
       for (let j = i + 1; j < group.length; j++) {
         const next = group[j];
         const normalizedNext = next
           .replace(/[^a-zA-Z0-9]/g, '')
           .toLowerCase();
 
-        // Calculate Levenshtein distance between both names
-        // Using https://www.npmjs.com/package/js-levenshtein
-        const levenshteinDistance = Levenshtein(
-          normalizedCurrent,
-          normalizedNext
-        );
-
-        /**
-         * Determine threshold based off maximum name length of both
-         * names muliplied by threshold modifier.
-         */
-        const threshold =
-          Math.max(normalizedCurrent.length, normalizedNext.length) *
-          THRESHOLD_MOD;
-
-        // Add potential duplicates to potential dupes map
-        if (levenshteinDistance < threshold) {
+        // Add any advertisers matching the current first word
+        if (normalizedNext.includes(currentInitialWord)) {
           if (!potentialDupes[current]) {
             potentialDupes[current] = [];
           }
           potentialDupes[current].push(next);
+        } else {
+          // Otherwise, calculate the Levenshtein distance between both normalized names
+          const normalizedCurrent = current
+            .replace(/[^a-zA-Z0-9]/g, '')
+            .toLowerCase();
+          // Calculate Levenshtein distance between both names
+          // Using https://www.npmjs.com/package/js-levenshtein
+          const levenshteinDistance = Levenshtein(
+            normalizedCurrent,
+            normalizedNext
+          );
+
+          /**
+           * Determine threshold based off maximum name length of both
+           * names muliplied by threshold modifier.
+           */
+          const threshold =
+            Math.max(
+              normalizedCurrent.length,
+              normalizedNext.length
+            ) * THRESHOLD_MOD;
+
+          if (levenshteinDistance < threshold) {
+            if (!potentialDupes[current]) {
+              potentialDupes[current] = [];
+            }
+            potentialDupes[current].push(next);
+          }
         }
       }
     }
