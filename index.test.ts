@@ -1,13 +1,11 @@
-// import { helloWorld } from './index.js';
+import { findPotentialDupes } from './index.js';
 
-// describe('index.js', () => {
-//   describe('hello world', () => {
-//     it('Outputs str to console', () => {
-//       const stub = jest.spyOn(console, 'log');
-//       helloWorld('Hello');
-//       expect(stub).toHaveBeenCalledWith('Hello');
-//     });
-//   });
-// });
-
-
+describe('findPotentialDupes', () => {
+  it('returns potential dupes', () => {
+    const expectedResult = {
+      '1-800-Flowers.com': ['1800Flowers.com'],
+    };
+    const result = findPotentialDupes('./data/test.txt');
+    expect(result).toEqual(expectedResult);
+  });
+});
